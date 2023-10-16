@@ -5,7 +5,9 @@ namespace :api do
         end
         resources :books
 
-        resources :genres
+        resources :genres 
+
+        resources :movies
 
         namespace :android do
             resources :books

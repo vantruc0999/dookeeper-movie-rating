@@ -21,8 +21,7 @@ class Api::V1::GenresController < ApiController
   
     # POST /genres or /genres.json
     def create
-        allowed_params = genre_params.permit(:name, :description)
-        @genre = Genre.new(allowed_params)
+        @genre = Genre.new(genre_params)
 
         if @genre.save
           render json: {
@@ -53,17 +52,15 @@ class Api::V1::GenresController < ApiController
           }, status: :unprocessable_entity
         end
     end
-  
     # DELETE /genres/1 or /genres/1.json
     def destroy
         @genre.destroy
         render json: {
           status: :ok,
           message: "Genres deleted successfully",
-          data: @genre
         }, status: :ok
     end
-  
+
     private
       # Use callbacks to share common setup or constraints between actions.
       def set_genre
@@ -81,6 +78,10 @@ class Api::V1::GenresController < ApiController
       # Only allow a list of trusted parameters through.
       def genre_params
         params.require(:genre).permit(:name, :description)
+      end
+
+      def get_current_user
+        @current_user_doorkeeper = User.find(doorkeeper_token.resource_owner_id)
       end
 end
   
