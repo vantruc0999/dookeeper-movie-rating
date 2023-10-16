@@ -1,76 +1,81 @@
 class Api::V1::GenresController < ApiController
-    before_action :set_genre, only: %i[ show edit update destroy ]
-    skip_before_action :doorkeeper_authorize!, only: %i[index]
+    before_action :set_genre, only: %i[ show update destroy ]
+    skip_before_action :doorkeeper_authorize!, only: %i[index show]
 
     # GET /genres or /genres.json
     def index
       @genres = Genre.all
-      respond_to do |format|
-        format.json {render json: @genres}
-      end
+      render json: {
+        status: :ok,
+        data: @genres
+      }, status: :ok
     end
   
     # GET /genres/1 or /genres/1.json
     def show
-    end
-  
-    # GET /genres/new
-    def new
-      @genre = Genre.new
-    end
-  
-    # GET /genres/1/edit
-    def edit
+        render json: {
+            status: 200,
+            data: @genre
+      }, status: :ok
     end
   
     # POST /genres or /genres.json
     def create
-      @genre = Genre.new(genre_params)
-  
-      respond_to do |format|
+        allowed_params = genre_params.permit(:name, :description)
+        @genre = Genre.new(allowed_params)
+
         if @genre.save
           render json: {
                 status: :ok,
                 message: "Genres created successfully",
                 data: @genre
-          }
-        else
+          }, status: :ok
+        else    
             render json: {
                 status: :unprocessable_entity,
                 message:  @genre.errors,
-                data: @genre
-          }
+          }, status: :unprocessable_entity
         end
-      end
     end
   
     # PATCH/PUT /genres/1 or /genres/1.json
     def update
-      respond_to do |format|
         if @genre.update(genre_params)
-          format.html { redirect_to genre_url(@genre), notice: "Genre was successfully updated." }
-          format.json { render :show, status: :ok, location: @genre }
-        else
-          format.html { render :edit, status: :unprocessable_entity }
-          format.json { render json: @genre.errors, status: :unprocessable_entity }
+          render json: {
+                status: :ok,
+                message: "Genres updated successfully",
+                data: @genre
+          }, status: :ok
+        else    
+            render json: {
+                status: :unprocessable_entity,
+                message:  @genre.errors,
+          }, status: :unprocessable_entity
         end
-      end
     end
   
     # DELETE /genres/1 or /genres/1.json
     def destroy
-      @genre.destroy!
-  
-      respond_to do |format|
-        format.html { redirect_to genres_url, notice: "Genre was successfully destroyed." }
-        format.json { head :no_content }
-      end
+        @genre.destroy
+        render json: {
+          status: :ok,
+          message: "Genres deleted successfully",
+          data: @genre
+        }, status: :ok
     end
   
     private
       # Use callbacks to share common setup or constraints between actions.
       def set_genre
-        @genre = Genre.find(params[:id])
+        @genre = Genre.find_by(id: params[:id])
+
+        if !@genre
+            render json: {
+                status: :unprocessable_entity,
+                message: "Genre not found"
+          }, status: :unprocessable_entity
+        end
+
       end
   
       # Only allow a list of trusted parameters through.
