@@ -1,10 +1,9 @@
 class Api::V1::RatingsController < ApiController
-    before_action :set_rating, only: %i[ show update destroy ]
+    before_action :set_rating, only: %i[ show destroy ]
     skip_before_action :doorkeeper_authorize!, only: %i[index show]
   
     # GET /ratings or /ratings.json
     def index
-      @ratings = Rating.all
     end
   
     # GET /ratings/1 or /ratings/1.json
@@ -13,7 +12,7 @@ class Api::V1::RatingsController < ApiController
 
     def create
       if params[:movie_id] && @movie = Movie.find_by_id(params[:movie_id])
-        if Rating.find_by(user_id: get_doorkeeper_user.id, movie_id: @movie.id)
+        if Rating.find_by(user_id: current_user.id, movie_id: @movie.id)
             @error = "You can not review this movie again"
           else
             @rating = Rating.new(rating_params)
@@ -29,36 +28,38 @@ class Api::V1::RatingsController < ApiController
         render json: { 
           status: :ok,
           message: "Rating created successfully",
-          rating: @rating 
+          data: @rating 
         }
       end
     end
     
-    # PATCH/PUT /ratings/1 or /ratings/1.json
-    def update
-     
-    end
-  
     # DELETE /ratings/1 or /ratings/1.json
     def destroy
-     
+      @rating.destroy
+      render json: { 
+        status: :ok,
+        message: "Rating deleted successfully",
+        data: @rating 
+      }
     end
   
     private
       # Use callbacks to share common setup or constraints between actions.
       def set_rating
-        @rating = Rating.find(params[:id])
+        @rating = Rating.find_by(id: params[:id])
+
+        if !@rating
+          render json: {
+              status: :unprocessable_entity,
+              message: "rating not found"
+        }, status: :unprocessable_entity
+        end
       end
   
       # Only allow a list of trusted parameters through.
       def rating_params
-        user = User.find(doorkeeper_token.resource_owner_id)
-        params[:rating][:user_id] = user.id
+        params[:rating][:user_id] = current_user.id
         params.require(:rating).permit(:comment, :rating_value, :movie_id, :user_id)
-      end
-
-      def get_doorkeeper_user
-        @current_user_doorkeeper = User.find(doorkeeper_token.resource_owner_id)
       end
   end
   

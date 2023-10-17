@@ -11,6 +11,8 @@ namespace :api do
 
         resources :ratings
 
+        resources :favorites
+
         namespace :android do
             resources :books
         end

@@ -1,7 +1,6 @@
 class Api::V1::MoviesController < ApiController
     before_action :set_movie, only: %i[ show update destroy ]
     skip_before_action :doorkeeper_authorize!, only: %i[index show]
-  
     # GET /movies or /movies.json
     # This code includes user object in ratings
     # def index

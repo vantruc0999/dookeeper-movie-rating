@@ -5,6 +5,7 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable
 
   has_many :rating
+  has_many :favorites
 
   validates :email, format: URI::MailTo::EMAIL_REGEXP
   enum role: %i[user admin]
