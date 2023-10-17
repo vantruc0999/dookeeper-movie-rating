@@ -3,15 +3,62 @@ class Api::V1::MoviesController < ApiController
     skip_before_action :doorkeeper_authorize!, only: %i[index show]
   
     # GET /movies or /movies.json
+    # This code includes user object in ratings
+    # def index
+    #     @movies = Movie.includes(:genres).all
+    #     render json:{
+    #         status: 'Success',
+    #         message: "Movies load successfully",
+    #         data: @movies.as_json(
+    #           include: { 
+    #             genres: { except: [:created_at, :updated_at] },
+    #             rating: {
+    #               include: {
+    #                 user: { only: [:id, :name, :email] } # Include user details
+    #               },
+    #               except: [:created_at, :updated_at]
+    #             } 
+    #           },
+    #         ),
+    #     }, status: :ok
+    # end
+    
+    # this code does not include user object in ratings, user infor is in ratings section
     def index
-        @movies = Movie.includes(:genres).all
-        render json:{
-            status: 'Success',
-            message: "Movies load successfully",
-            data: @movies.as_json(include: { genres: { except: [:created_at, :updated_at] } }),
-        }, status: :ok
+      @movies = Movie.includes(:genres, ratings: :user).all
+      data = @movies.map do |movie|
+        {
+          id: movie.id,
+          title: movie.title,
+          poster: movie.poster,
+          introduction: movie.introduction,
+          director: movie.director,
+          story: movie.story,
+          language: movie.language,
+          release_date: movie.release_date,
+          genres: movie.genres.map { |genre| genre.attributes.except('created_at', 'updated_at') },
+          ratings: movie.ratings.map do |item|
+            {
+              id: item.id,
+              user_id: item.user.id,
+              name: item.user.name,
+              email: item.user.email,
+              rating_value: item.rating_value,
+              comment: item.comment
+            }
+          end,
+          average_rating: movie.ratings.average(:rating_value),
+          comments_count: movie.ratings.count { |rating| rating.comment.present? }
+        }
+      end
+    
+      render json: {
+        status: 'Success',
+        message: 'Movies loaded successfully',
+        data: data
+      }, status: :ok
     end
-  
+    
     # GET /movies/1 or /movies/1.json
     def show
         render json: {

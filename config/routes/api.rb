@@ -9,6 +9,8 @@ namespace :api do
 
         resources :movies
 
+        resources :ratings
+
         namespace :android do
             resources :books
         end
