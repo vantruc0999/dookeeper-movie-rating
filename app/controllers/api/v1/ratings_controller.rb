@@ -1,7 +1,10 @@
 class Api::V1::RatingsController < ApiController
     before_action :set_rating, only: %i[ show destroy ]
     skip_before_action :doorkeeper_authorize!, only: %i[index show]
-  
+    before_action :is_admin?, only: %i[create destroy]
+
+    include ApplicationHelper
+    include ApiResponse
     # GET /ratings or /ratings.json
     def index
     end
@@ -22,25 +25,17 @@ class Api::V1::RatingsController < ApiController
       end
     
       if @error
-        render json: { error: @error }, status: :not_found
+        render_error(@error)
       else
         @rating.save
-        render json: { 
-          status: :ok,
-          message: "Rating created successfully",
-          data: @rating 
-        }
+        render_success(@rating, "Rating created successfully")
       end
     end
     
     # DELETE /ratings/1 or /ratings/1.json
     def destroy
       @rating.destroy
-      render json: { 
-        status: :ok,
-        message: "Rating deleted successfully",
-        data: @rating 
-      }
+      render_success(@rating, "Rating deleted successfully")
     end
   
     private
@@ -49,10 +44,7 @@ class Api::V1::RatingsController < ApiController
         @rating = Rating.find_by(id: params[:id])
 
         if !@rating
-          render json: {
-              status: :unprocessable_entity,
-              message: "rating not found"
-        }, status: :unprocessable_entity
+        render_error("rating not found")
         end
       end
   

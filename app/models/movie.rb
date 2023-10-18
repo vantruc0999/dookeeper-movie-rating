@@ -9,5 +9,6 @@ class Movie < ApplicationRecord
     end
 
     validates :title, presence: {messsage: "Movie title can not be blank"}, length: { in: 2..255, message: "Movie title must be between 2 and 255 characters long." }
+    validates :story, length: { in: 2..255, message: "Movie story must be between 2 and 255 characters long." }
     validates :director, presence: {messsage: "Movie director can not be blank"}, length: { in: 2..255, message: "Movie director must be between 2 and2 55 characters long." }
 end

@@ -14,7 +14,7 @@ namespace :api do
         resources :favorites
 
         namespace :android do
-            resources :books
+            resources :movies
         end
     end
 end

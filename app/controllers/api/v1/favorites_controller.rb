@@ -1,6 +1,10 @@
 class Api::V1::FavoritesController < ApiController
     before_action :set_favorite, only: %i[ show ]
     skip_before_action :doorkeeper_authorize!, only: %i[show]
+    before_action :is_admin?, only: %i[create]
+
+    include ApplicationHelper
+    include ApiResponse
     
     # GET /favorites or /favorites.json
     def index
@@ -14,7 +18,7 @@ class Api::V1::FavoritesController < ApiController
         }
         end
 
-        render_success('Movies favorites loaded successfully', data)
+        render_success(data,'Movies favorites loaded successfully')
     end
   
     # GET /favorites/1 or /favorites/1.json
@@ -32,12 +36,12 @@ class Api::V1::FavoritesController < ApiController
       
         if @favorite
           @favorite.destroy
-          render_success("Movie has been removed from favorites successfully", @favorite)
+          render_success( @favorite,"Movie has been removed from favorites successfully")
         else
           @favorite = Favorite.new(favorite_params)
       
           if @favorite.save
-            render_success("Movie has been added to favorites successfully", @favorite)
+            render_success(@favorite, "Movie has been added to favorites successfully")
           else
             render_error(@favorite.errors.full_messages.join(', '), :unprocessable_entity)
           end
@@ -55,20 +59,6 @@ class Api::V1::FavoritesController < ApiController
         params[:favorite][:user_id] = current_user.id
         params.require(:favorite).permit(:movie_id, :user_id)
       end
-
-      def render_success(message, data)
-        render json: {
-          status: :ok,
-          message: message,
-          data: data
-        }
-      end
       
-      def render_error(message, status = :unprocessable_entity)
-        render json: {
-          status: status,
-          message: message
-        }
-      end
   end
   

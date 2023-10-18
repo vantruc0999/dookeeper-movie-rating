@@ -1,22 +1,20 @@
 class Api::V1::GenresController < ApiController
     before_action :set_genre, only: %i[ show update destroy ]
     skip_before_action :doorkeeper_authorize!, only: %i[index show]
+    before_action :is_admin?, only: %i[create update destroy]
+
+    include ApplicationHelper
+    include ApiResponse
 
     # GET /genres or /genres.json
     def index
       @genres = Genre.all
-      render json: {
-        status: :ok,
-        data: @genres
-      }, status: :ok
+      render_success(@genres, 'Genres loaded successfully')
     end
   
     # GET /genres/1 or /genres/1.json
     def show
-        render json: {
-            status: 200,
-            data: @genre
-      }, status: :ok
+      render_success(@genre, 'Genre loaded successfully')
     end
   
     # POST /genres or /genres.json
@@ -24,41 +22,24 @@ class Api::V1::GenresController < ApiController
         @genre = Genre.new(genre_params)
 
         if @genre.save
-          render json: {
-                status: :ok,
-                message: "Genres created successfully",
-                data: @genre
-          }, status: :ok
+          render_success(@genre, "Genres created successfully")
         else    
-            render json: {
-                status: :unprocessable_entity,
-                message:  @genre.errors,
-          }, status: :unprocessable_entity
+          render_error(@genre.errors)
         end
     end
   
     # PATCH/PUT /genres/1 or /genres/1.json
     def update
         if @genre.update(genre_params)
-          render json: {
-                status: :ok,
-                message: "Genres updated successfully",
-                data: @genre
-          }, status: :ok
+          render_success(@genre, "Genre updated successfully")
         else    
-            render json: {
-                status: :unprocessable_entity,
-                message:  @genre.errors,
-          }, status: :unprocessable_entity
+          render_error(@genre.errors)
         end
     end
     # DELETE /genres/1 or /genres/1.json
     def destroy
         @genre.destroy
-        render json: {
-          status: :ok,
-          message: "Genres deleted successfully",
-        }, status: :ok
+        render_success(@genre, "Genres deleted successfully")
     end
 
     private

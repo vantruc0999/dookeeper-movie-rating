@@ -1,33 +1,10 @@
-class Api::V1::MoviesController < ApiController
+class Api::V1::Android::MoviesController < ApiController
     before_action :set_movie, only: %i[ show update destroy ]
     skip_before_action :doorkeeper_authorize!, only: %i[index show]
-    before_action :is_admin?, only: %i[create update destroy]
+    before_action :is_admin?
 
     include ApplicationHelper
-    include ApiResponse
 
-    # GET /movies or /movies.json
-    # This code includes user object in ratings
-    # def index
-    #     @movies = Movie.includes(:genres).all
-    #     render json:{
-    #         status: 'Success',
-    #         message: "Movies load successfully",
-    #         data: @movies.as_json(
-    #           include: { 
-    #             genres: { except: [:created_at, :updated_at] },
-    #             rating: {
-    #               include: {
-    #                 user: { only: [:id, :name, :email] } # Include user details
-    #               },
-    #               except: [:created_at, :updated_at]
-    #             } 
-    #           },
-    #         ),
-    #     }, status: :ok
-    # end
-    
-    # this code does not include user object in ratings, user infor is in ratings section
     def index
       @movies = Movie.includes(:genres, ratings: :user).all
       data = @movies.map do |movie|
@@ -55,15 +32,20 @@ class Api::V1::MoviesController < ApiController
           comments_count: movie.ratings.count { |rating| rating.comment.present? }
         }
       end
-
-      render_success(data, 'Movies loaded successfully')
-
+    
+      render json: {
+        status: 'Success',
+        message: 'Movies loaded successfully',
+        data: data
+      }, status: :ok
     end
     
     # GET /movies/1 or /movies/1.json
     def show
-      data = @movie.as_json(include: { genres: { except: [:created_at, :updated_at] } })
-      render_success(data, 'Movies loaded successfully')
+        render json: {
+            status: 200,
+            data: @movie.as_json(include: { genres: { except: [:created_at, :updated_at] } }),
+      }, status: :ok
     end
   
     # POST /movies or /movies.json
@@ -75,12 +57,19 @@ class Api::V1::MoviesController < ApiController
             genre = Genre.find_or_create_by(id: genre_id)
             @movie.genres << genre
           end
-          render_success(@movie,  "Movie created successfully")
+      
+          render json: {
+            status: :ok,
+            message: "Movie created successfully",
+            data: @movie
+          }, status: :ok
         else
-          render_error( @movie.errors)
+          render json: {
+            status: :unprocessable_entity,
+            message: @movie.errors
+          }, status: :unprocessable_entity
         end
-
-    end
+      end
       
   
     # PATCH/PUT /movies/1 or /movies/1.json
@@ -91,17 +80,29 @@ class Api::V1::MoviesController < ApiController
           params[:genres].each do |genre_id|
             genre = Genre.find_or_create_by(id: genre_id)
             @movie.genres << genre
-        end
-          render_success(@movie, "Movie updated successfully")
+          end
+      
+          render json: {
+            status: :ok,
+            message: "Movie updated successfully",
+            data: @movie
+          }, status: :ok
         else
-          render_error(@movie, @movie.errors)
+          render json: {
+            status: :unprocessable_entity,
+            message: @movie.errors
+          }, status: :unprocessable_entity
         end
     end
       
+  
     # DELETE /movies/1 or /movies/1.json
     def destroy
         @movie.destroy
-        render_success(@movie, "Movie deleted successfully")
+        render json: {
+          status: :ok,
+          message: "Movie deleted successfully",
+        }, status: :ok
     end
   
     private
