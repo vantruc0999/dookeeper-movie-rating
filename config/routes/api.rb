@@ -2,6 +2,10 @@ namespace :api do
     namespace :v1 do
         scope :users, module: :users do
             post '/', to: "registrations#create", as: :user_registration
+            get '/get-user', to: "users#get_user"
+            get '/get-all-users', to: "users#get_all_users"
+            post '/add-user', to: "users#add_user"
+            post '/update-user', to: "users#update_user"
         end
         resources :books
 
