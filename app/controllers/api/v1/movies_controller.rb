@@ -2,6 +2,8 @@ class Api::V1::MoviesController < ApiController
     before_action :set_movie, only: %i[ show update destroy ]
     skip_before_action :doorkeeper_authorize!, only: %i[index show]
     before_action :is_admin?, only: %i[create update destroy]
+    before_action :set_url_options
+
 
     include ApplicationHelper
     include ApiResponse
@@ -16,7 +18,7 @@ class Api::V1::MoviesController < ApiController
     #         data: @movies.as_json(
     #           include: { 
     #             genres: { except: [:created_at, :updated_at] },
-    #             rating: {
+    #             ratings: {
     #               include: {
     #                 user: { only: [:id, :name, :email] } # Include user details
     #               },
@@ -29,12 +31,11 @@ class Api::V1::MoviesController < ApiController
     
     # this code does not include user object in ratings, user infor is in ratings section
     def index
-      @movies = Movie.includes(:genres, ratings: :user).all
+      @movies = Movie.includes(:genres, ratings: :user).order(id: :desc).all
       data = @movies.map do |movie|
         {
           id: movie.id,
           title: movie.title,
-          poster: movie.poster,
           introduction: movie.introduction,
           director: movie.director,
           story: movie.story,
@@ -52,24 +53,39 @@ class Api::V1::MoviesController < ApiController
             }
           end,
           average_rating: movie.ratings.average(:rating_value),
-          comments_count: movie.ratings.count { |rating| rating.comment.present? }
+          comments_count: movie.ratings.count { |rating| rating.comment.present? },
+          poster_url: movie.poster.url
         }
       end
-
       render_success(data, 'Movies loaded successfully')
-
     end
     
     # GET /movies/1 or /movies/1.json
     def show
-      data = @movie.as_json(include: { genres: { except: [:created_at, :updated_at] } })
-      render_success(data, 'Movies loaded successfully')
+      average_rating =  @movie.ratings.average(:rating_value)
+      poster_url = @movie.poster.url if @movie.poster.attached?
+
+      data = @movie.as_json(
+        include: {
+          genres: { except: [:created_at, :updated_at] },
+          ratings: {
+            include: {
+              user: { only: [:id, :name, :email] }
+            },
+            except: [:created_at, :updated_at]
+          }
+        },
+      )
+
+      data['poster_url'] = poster_url
+      data['average_rating'] = average_rating
+
+      render_success(data, 'Movie loaded successfully')
     end
-  
+    
     # POST /movies or /movies.json
     def create
         @movie = Movie.new(movie_params)
-      
         if @movie.save
           params[:genres].each do |genre_id|
             genre = Genre.find_or_create_by(id: genre_id)
@@ -81,8 +97,7 @@ class Api::V1::MoviesController < ApiController
         end
 
     end
-      
-  
+        
     # PATCH/PUT /movies/1 or /movies/1.json
     def update      
         if @movie.update(movie_params)
@@ -119,7 +134,15 @@ class Api::V1::MoviesController < ApiController
   
       # Only allow a list of trusted parameters through.
       def movie_params
-        params.require(:movie).permit(:title, :director, :release_date, :language, :story, :poster, :introduction, :genres)
+        params.permit(:title, :director, :release_date, :language, :story, :poster, :introduction, :genres)
+        # params.require(:movie).permit(:title, :director, :release_date, :language, :story, :poster, :introduction, :genres)
+      end
+
+      def set_url_options
+        ActiveStorage::Current.url_options = {
+          host: 'http://192.168.102.37',
+          port: 3001 
+        }
       end
   end
   

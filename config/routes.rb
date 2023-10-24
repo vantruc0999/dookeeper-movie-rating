@@ -2,7 +2,7 @@ Rails.application.routes.draw do
   resources :favorites
   resources :ratings
   resources :genres
-  root 'pages#home'
+  # root 'pages#home'
   
   use_doorkeeper
   devise_for :users
